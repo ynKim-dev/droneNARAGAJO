@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     private String objectName = null;
     private LatLong missionCoord;
     private int returnCount = 0;
-    // 초기 이륙 장소에서 띄울 수 있도록 flag
+
     private Boolean homeFlag = false;
     private ArrayList<LatLng> missionArr = new ArrayList<>();
 
@@ -221,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         this.controlTower = new ControlTower(context);
         this.drone = new Drone(context);
 
-        // SMS 권한 있는지 확인
+
         Intent intent = getIntent();
         processCommand(intent);
 
@@ -240,7 +240,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
             }
         }
-        // 권한 end
+
 
         // Spinner modeSelector
         this.modeSelector.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
@@ -374,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 }
                 // 저장된 시간 리스트랑 비교하기
                 if (messageTime != null) {
-                    // timeAL gpsAL preTimeAL preGpsAL
+                    // Gps 좌표 가져오기
                     if (cycleCount == 0) {
                         for (int i = 0; i <= manageCount; i++) {
                             if (messageStore.equals(timeAL.get(i)) == true) {
@@ -403,7 +403,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     //
 
     public void checkObject() {
-        for (int i = 20; i < 25; i++) {
+        // 사람 확인 후 미션 종료 시키기
+        for (int i = 20; i < 24; i++) {
             temp = messageStore.charAt(i);
             objectName = objectName + temp;
         }
@@ -411,7 +412,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             temp = messageStore.charAt(i);
             messageURL = messageURL + temp;
         }
-        if (objectName.equals("person") == true) {
+        if (objectName.equals("human") == true) {
             missionCount++;
         }
     }
@@ -461,11 +462,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             // land and take-off
             State vehicleState = this.drone.getAttribute(AttributeType.STATE);
             VehicleMode vehicleMode = vehicleState.getVehicleMode();
-            if(vehicleState.isFlying() && vehicleMode != vehicleMode.COPTER_LAND && returnCount == 0) {
+            if (vehicleState.isFlying() && vehicleMode != vehicleMode.COPTER_LAND && returnCount == 0) {
                 ChangeToLandMode();
                 returnCount++;
-            }
-            else if (!vehicleState.isFlying() && returnCount == 1) {
+            } else if (!vehicleState.isFlying() && returnCount == 1) {
                 AlertDialog.Builder takeOffAlertBuilder = new AlertDialog.Builder(MainActivity.this);
                 takeOffAlertBuilder.setMessage("지정한 이륙고도까지 기체가 상승합니다.\n안전거리를 유지하세요.")
                         .setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -499,7 +499,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                             }
                         });
                 takeOffAlertBuilder.show();
-                if(returnCount >= 2) {
+                if (returnCount >= 2) {
                     returnGuidedModeLC();
                 }
             }
@@ -622,7 +622,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         if (drone.isConnected()) {
             drone.disconnect();
         } else {
-            //drone.connect(ConnectionParameter.newUdpConnection(null));
             drone.connect(retrieveConnectionParameters());
         }
     }
@@ -648,8 +647,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         int idx = getConnectionTypeIdx();
 
         ConnectionParameter connParams;
-        //switch (connectionType) {
-        //switch (ConnectionType.TYPE_BLUETOOTH) {
         switch (idx) {
             case ConnectionType.TYPE_USB:
                 connParams = ConnectionParameter.newUsbConnection(mPrefs.getUsbBaudRate(),
@@ -713,14 +710,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         return idx;
     }
 
-//    private void checkSoloState() {
-//        final SoloState soloState = drone.getAttribute(SoloAttributes.SOLO_STATE);
-//        if (soloState == null) {
-//            alertUser("Unable to retrieve the solo state.");
-//        } else {
-//            alertUser("Solo state is up to date.");
-//        }
-//    }
 
     // Arm Button
     public void onArmButtonTap(View view) {
@@ -750,7 +739,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                                 @Override
                                 public void onSuccess() {
                                     alertUser("Taking off...");
-                                    if(homeFlag == false) {
+                                    if (homeFlag == false) {
                                         Gps droneGps = drone.getAttribute(AttributeType.GPS);
                                         homePosition = droneGps.getPosition();
                                         homeFlag = true;
@@ -1130,28 +1119,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
 
     public void MissionABPolyline() {
-        // compute degree of a-b line
-        /*
-        degreeAB = mathUtils.getHeadingFromCoordinates(castToLatLong(markerA.getPosition()), castToLatLong(markerB.getPosition()));
-        for (int j = 0; mPathWidth * j <= mPathDistance; j++) {
-            latlngsAForPolylineAL.add(castToLatLng(mathUtils.newCoordFromBearingAndDistance(castToLatLong(markerA.getPosition()), degreeAB + 90, mPathWidth * j)));
-            //Log.d("polyline", String.format("%f", mPathWidth*j));
-        }
-        for (int i = 0; mPathWidth * i <= mPathDistance; i++) {
-            latlngsBForPolylineAL.add(castToLatLng(mathUtils.newCoordFromBearingAndDistance(castToLatLong(markerB.getPosition()), degreeAB + 90, mPathWidth * i)));
-        }
-        for (int i = 0; i <= mPathDistance / mPathWidth; i++) {
-            if (i % 2 == 0) {
-                latlngsAllForPolylineAL.add(latlngsBForPolylineAL.get(i));
-                latlngsAllForPolylineAL.add(latlngsAForPolylineAL.get(i));
-            } else {
-                latlngsAllForPolylineAL.add(latlngsAForPolylineAL.get(i));
-                latlngsAllForPolylineAL.add(latlngsBForPolylineAL.get(i));
-            }
-        }
-
-         */
-        //Log.d("PolylineLog", latlngsAForPolylineAL.toString());
 
         getNextCoords();
 
@@ -1266,13 +1233,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         polyline.setMap(null);
         missionArr.clear();
     }
-    // 조난자 위치 좌표
-    //  public void SetAbOriginalVersion(View view) {
-//        Gps droneGps = this.drone.getAttribute(AttributeType.GPS);
-//        LatLong vehiclePosition = droneGps.getPosition();
-//        if (aFlag == false && bFlag == false) {
-//            markerA.setPosition(castToNaverCoord(vehiclePosition));
-
 
     // 리턴 버튼 관련 메소드
     public void returnToHomeBtn(View view) {
@@ -1470,37 +1430,35 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public void getNextCoords() {
         MathUtils mathUtils = new MathUtils();
 
-        int missionCount = (int)(mPathDistance / mPathWidth) * 2 + 2;
+        int missionCount = (int) (mPathDistance / mPathWidth) * 2 + 2;
 
         double lineDistance = mathUtils.getDistance2D(new LatLong(missionArr.get(0).latitude, missionArr.get(0).longitude), new LatLong(missionArr.get(1).latitude, missionArr.get(1).longitude));
 
-        for(int i = 2; i < missionCount; i++) {
-            if( i % 4 == 2 || i % 4 == 3) {
-                if( i % 4 == 2) {
-                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude),
-                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i-2).latitude, missionArr.get(i-2).longitude),
-                                    new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude)) + 90, mPathWidth);
+        for (int i = 2; i < missionCount; i++) {
+            if (i % 4 == 2 || i % 4 == 3) {
+                if (i % 4 == 2) {
+                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude),
+                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i - 2).latitude, missionArr.get(i - 2).longitude),
+                                    new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude)) + 90, mPathWidth);
                     missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
-                } else if ( i % 4 == 3) {
-                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude),
-                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i-2).latitude, missionArr.get(i-2).longitude),
-                                    new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude)) + 90, lineDistance);
-                    missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
-                }
-                // + 90
-            } else if( i % 4 == 0 || i % 4 == 1) {
-                if( i % 4 == 0) {
-                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude),
-                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i-2).latitude, missionArr.get(i-2).longitude),
-                                    new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude)) - 90, mPathWidth);
-                    missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
-                } else if(i % 4 == 1) {
-                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude),
-                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i-2).latitude, missionArr.get(i-2).longitude),
-                                    new LatLong(missionArr.get(i-1).latitude, missionArr.get(i-1).longitude)) - 90, lineDistance);
+                } else if (i % 4 == 3) {
+                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude),
+                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i - 2).latitude, missionArr.get(i - 2).longitude),
+                                    new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude)) + 90, lineDistance);
                     missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
                 }
-                // -90
+            } else if (i % 4 == 0 || i % 4 == 1) {
+                if (i % 4 == 0) {
+                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude),
+                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i - 2).latitude, missionArr.get(i - 2).longitude),
+                                    new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude)) - 90, mPathWidth);
+                    missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
+                } else if (i % 4 == 1) {
+                    LatLong latLong = mathUtils.newCoordFromBearingAndDistance(new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude),
+                            mathUtils.getHeadingFromCoordinates(new LatLong(missionArr.get(i - 2).latitude, missionArr.get(i - 2).longitude),
+                                    new LatLong(missionArr.get(i - 1).latitude, missionArr.get(i - 1).longitude)) - 90, lineDistance);
+                    missionArr.add(i, new LatLng(latLong.getLatitude(), latLong.getLongitude()));
+                }
             }
         }
     }
