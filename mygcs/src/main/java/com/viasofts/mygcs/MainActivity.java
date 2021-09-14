@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     private ArrayList<LatLng> latlngsAllForPolylineAL = new ArrayList<>();
 
     private Button btnSetMission;
-    private Mission mission;
+    private Mission mission = new Mission();
     private Boolean missionSentFlag = false;
     private Boolean missionStartFlag = false;
 
@@ -362,8 +362,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             messageStore = content;
             if (messageStore != null) {
                 Log.d("messageTag", messageStore);
-                messageTime = null;
+                //messageTime = null;
                 // 11 ~ 18까지 (시간만 가져오기)
+                checkObject();
+
+                /*
                 for (int i = 0; i < messageStore.length(); i++) {
                     if (messageStore.length() > 18) { // log test시 버그 방지
                         if (i >= 11 && i <= 18) {
@@ -372,7 +375,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                         }
                     }
                 }
+
+                 */
                 // 저장된 시간 리스트랑 비교하기
+                /*
                 if (messageTime != null) {
                     // Gps 좌표 가져오기
                     if (cycleCount == 0) {
@@ -397,6 +403,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                         }
                     }
                 }
+
+
+                 */
             }
         }
     }
@@ -408,10 +417,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             temp = messageStore.charAt(i);
             objectName = objectName + temp;
         }
-        for (int i = 27; i < messageStore.length(); i++) {
-            temp = messageStore.charAt(i);
-            messageURL = messageURL + temp;
-        }
+//        for (int i = 27; i < messageStore.length(); i++) {
+//            temp = messageStore.charAt(i);
+//            messageURL = messageURL + temp;
+//        }
         if (objectName.equals("human") == true) {
             missionCount++;
         }
@@ -443,22 +452,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // test_start
         if (missionCount == 1) {
             // mission pause...
-            MissionApi.getApi(this.drone).pauseMission(new AbstractCommandListener() {
-                @Override
-                public void onSuccess() {
-                    btnSetMission.setText("Start\nMission");
-                }
-
-                @Override
-                public void onError(int executionError) {
-
-                }
-
-                @Override
-                public void onTimeout() {
-
-                }
-            });
             // land and take-off
             State vehicleState = this.drone.getAttribute(AttributeType.STATE);
             VehicleMode vehicleMode = vehicleState.getVehicleMode();
@@ -1160,7 +1153,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public void MissionAB(View view) {
         if (missionSentFlag == false && missionStartFlag == false) {
             //Todo: send mission to Drone
-            mission = new Mission();
             Altitude droneAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);
             for (int i = 0; i < missionArr.size(); i++) {
                 Waypoint waypointforMission = new Waypoint();
@@ -1168,8 +1160,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 waypointforMission.setDelay(1);
                 mission.addMissionItem(waypointforMission);
             }
-            Log.d("missionLog", latlngsAllForPolylineAL.toString());
-            Log.d("missionLog", mission.getMissionItems().toString());
             MissionApi.getApi(this.drone).setMission(mission, true);
             btnSetMission.setText("Start\nMission");
             missionSentFlag = true;
